@@ -1,26 +1,36 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { UserRegisterDto } from './dto/user-register.dto';
+import { UserService } from 'src/user/user.service';
+import { UserLoginDto } from './dto/user-login.dto';
+import { CustomErrors } from './custom/custom-errors';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  //initiate user AuthService
+  constructor(private readonly userService: UserService) {}
+  //register a user in the db
+  async create(registerUserDto: UserRegisterDto) {
+    return await this.userService.create(registerUserDto);
   }
 
-  findAll() {
-    return `This action returns all auth`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async loginUser(loginUserDto: UserLoginDto) {
+    const { email, password } = loginUserDto;
+    //find user by id
+    const dbUser = await this.userService.findUserByEmail(email);
+    //check user is exixts
+    if (!dbUser) {
+      throw new NotFoundException(CustomErrors.UserEmailNotFound);
+    }
+    //compare password
+    const isMatched = await argon2.verify(dbUser.hashedPassword, password);
+    //password not match state
+    if (!isMatched) {
+      throw new UnauthorizedException(CustomErrors.WrongCredentials);
+    }
   }
 }
