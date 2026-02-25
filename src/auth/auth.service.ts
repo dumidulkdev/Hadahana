@@ -59,6 +59,8 @@ export class AuthService {
     //compare user sent token with db saved hash
     if (dbuser) {
       const isMatched = await argon2.verify(dbuser.tokenHashed, refresh_token);
+      if (!isMatched)
+        throw new UnauthorizedException(CustomErrors.Unauthorized);
       //delete refresh token from db
       await this.tokenService.deleteRefreshToken(new Types.ObjectId(user_id));
       //generate enw refresh and access tokens
