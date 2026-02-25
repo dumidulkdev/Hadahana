@@ -1,13 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Types } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import {
+  RefreshToken,
+  RefreshTokenDocument,
+} from 'src/user/schemas/refresh-token.schema';
 
 @Injectable()
 export class TokenService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectModel(RefreshToken.name)
+    private readonly refreshModel: Model<RefreshTokenDocument>,
   ) {}
 
   //sign access token
@@ -19,11 +26,19 @@ export class TokenService {
     return await this.jwtService.signAsync(
       { sub: user_id.toString() },
       {
-        secret: this.configService.getOrThrow<string>('jwt_access_token'),
+        secret: this.configService.getOrThrow<string>('jwt_refresh_token'),
         expiresIn: '7d',
       },
     );
   }
-  // validate refresh token
-  // validate access token
+
+  async deleteRefreshToken(user_id: Types.ObjectId) {
+    await this.refreshModel.findOneAndDelete({ userd: user_id });
+  }
+
+  async findRefreshTokenFromUserId(user_id: string) {
+    return await this.refreshModel.findOne({
+      userd: new Types.ObjectId(user_id),
+    });
+  }
 }

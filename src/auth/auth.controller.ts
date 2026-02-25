@@ -1,7 +1,10 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserRegisterDto } from './dto/user-register.dto';
 import { UserLoginDto } from './dto/user-login.dto';
+import { LoginResponse } from './dto/login-response-dto';
+import { AccessAuthGuard } from './guards/access-token.guard';
+import { RefreshAuthGuard } from './guards/refresh-token.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -13,7 +16,18 @@ export class AuthController {
   }
 
   @Post('signin')
-  async signin(@Body() userLoginDto: UserLoginDto) {
-    return await this.authService.loginUser(userLoginDto);
+  async signin(@Body() userLoginDto: UserLoginDto): Promise<LoginResponse> {
+    const res = await this.authService.loginUser(userLoginDto);
+    return {
+      message: 'Login succuss!',
+      ...res,
+    };
+  }
+
+  //refresh token get route
+  @UseGuards(RefreshAuthGuard)
+  @Post('refresh')
+  async refresh(@Request() request) {
+    return await this.authService.revokeRefreshToken(request?.user);
   }
 }

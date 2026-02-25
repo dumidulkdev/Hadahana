@@ -14,4 +14,9 @@ export const CustomErrors = {
     message: 'Credentials are wrong',
     error_code: 'INVALID_CREDENTIALS',
   },
+  Unauthorized: {
+    error: true,
+    message: 'Unauthorized',
+    error_code: 'MALICIOUS_REQUEST',
+  },
 };
