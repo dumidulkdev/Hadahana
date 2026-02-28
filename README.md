@@ -338,8 +338,8 @@ ad_duration = (md_duration * ad_lord_duration) / 120.0
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/hadahana.git
-cd hadahana
+git clone https://github.com/dumidulkdev/Hadahana.git
+cd Hadahana
 ```
 
 ---
