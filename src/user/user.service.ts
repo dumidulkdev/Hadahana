@@ -44,7 +44,15 @@ export class UserService {
       {
         prompt: AIBuilderPrompt,
       },
-      { jobId: horoscopeModelResponse.job_id, delay: 2000 },
+      {
+        jobId: horoscopeModelResponse.job_id,
+        delay: 2000,
+        attempts: 5,
+        backoff: {
+          type: 'exponential',
+          delay: 15000,
+        },
+      },
     );
     return {
       job_id: horoscopeModelResponse.job_id,

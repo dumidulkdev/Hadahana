@@ -5,7 +5,7 @@ import { GeminiService } from '../gemini.service';
 import { log } from 'console';
 import { UserService } from '../user.service';
 
-@Processor('ai-analyse', { concurrency: 3 })
+@Processor('ai-analyse', { concurrency: 1 })
 export class AiAnalyserConsumer extends WorkerHost {
   private readonly logger = new Logger(AiAnalyserConsumer.name);
   constructor(
