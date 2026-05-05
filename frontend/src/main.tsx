@@ -2,9 +2,42 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material'
+
+const theme = createTheme({
+  typography: {
+    fontFamily: '"Josefin Sans", sans-serif',
+  },
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1a1a1a', 
+    },
+    background: {
+      default: '#ffffff',
+      paper: '#ffffff',
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+  },
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <App />
+    </ThemeProvider>
   </StrictMode>,
 )
