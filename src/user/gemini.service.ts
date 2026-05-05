@@ -13,7 +13,6 @@ export class GeminiService {
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.getOrThrow<string>('gen_ai_api_key');
-    console.log(apiKey);
 
     if (!apiKey) {
       this.logger.error(

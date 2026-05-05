@@ -35,7 +35,7 @@ The following diagram illustrates the complete request lifecycle, from the user'
 
 ```mermaid
 flowchart TD
-    A["👤 User — Birth Details"] -->|"POST /user/analyse\nJWT Protected"| B("NestJS Backend")
+    A["👤 User — Birth Details"] -->|"POST /user/analyse"| B("NestJS Backend")
 
     B -->|"HTTP POST /api/analsye"| C{"FastAPI Python Engine"}
     C -->|"pyswisseph Swiss Ephemeris\nLahiri Ayanamsha"| D["🔭 Planetary Calculations"]
@@ -296,7 +296,6 @@ ad_duration = (md_duration * ad_lord_duration) / 120.0
 | Layer | Technology |
 |---|---|
 | Framework | NestJS 11 (TypeScript) |
-| Authentication | JWT (Access + Refresh tokens), Passport.js, Argon2 |
 | Database | MongoDB via Mongoose |
 | Relational DB | PostgreSQL via Prisma (adapter-pg) |
 | Job Queue | BullMQ + Redis |
@@ -358,10 +357,6 @@ PORT=3000
 
 # MongoDB
 MONGO_DATABASE_URI=mongodb://localhost:27017/hadahana
-
-# JWT
-JWT_ACCESS_SECRET=your_super_secret_access_key_here
-JWT_REFRESH_TOKEN=your_super_secret_refresh_key_here
 
 # Python Calculation Engine
 ENGINE_BASE_URL=http://localhost:8000
@@ -449,17 +444,7 @@ curl -X POST http://localhost:8000/api/analsye \
 
 ## 📡 API Reference
 
-### Authentication
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/auth/register` | Register a new user |
-| `POST` | `/auth/login` | Login and receive JWT tokens |
-| `POST` | `/auth/refresh` | Refresh access token |
-
 ### Horoscope
-
-All routes below require `Authorization: Bearer <access_token>`.
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -498,9 +483,6 @@ POST /user/analyse
 ```
 hadahana/
 ├── src/
-│   ├── auth/                     # JWT auth, guards, strategies, DTOs
-│   │   ├── guards/               # AccessToken & RefreshToken guards
-│   │   └── strategy/             # Passport JWT strategies
 │   ├── user/
 │   │   ├── consumers/
 │   │   │   └── ai-analyse.consumer.ts   # BullMQ worker (concurrency: 3)
@@ -508,7 +490,7 @@ hadahana/
 │   │   │   └── nakshatra.data.ts        # All 27 Nakshatra metadata
 │   │   ├── util/
 │   │   │   └── prompt.generate.ts       # Sinhala prompt builder
-│   │   ├── schemas/              # Mongoose schemas (User, Horoscope, RefreshToken)
+│   │   ├── schemas/              # Mongoose schemas (Horoscope)
 │   │   ├── calculation.service.ts       # HTTP client → Python engine
 │   │   ├── gemini.service.ts            # Google Gemini AI wrapper
 │   │   └── user.service.ts              # Core business logic

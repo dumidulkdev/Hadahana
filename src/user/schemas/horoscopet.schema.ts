@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-import { User } from './user.schema';
+import { HydratedDocument } from 'mongoose';
 
 export type HoroscopeDocument = HydratedDocument<Horoscope>;
 
@@ -12,9 +11,6 @@ export enum State {
 
 @Schema({ timestamps: true })
 export class Horoscope {
-  @Prop({ type: Types.ObjectId, ref: User.name, index: true, required: true })
-  userId: Types.ObjectId;
-
   @Prop({ type: String })
   job_id: string;
 
