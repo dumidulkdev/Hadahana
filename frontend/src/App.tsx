@@ -4,16 +4,16 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
   TextField,
   MenuItem,
   Button,
   CircularProgress,
   AppBar,
   Toolbar,
-  Divider,
 } from '@mui/material';
 import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
+import LocationPicker from './LocationPicker';
 
 const API_BASE_URL = 'http://localhost:3000'; // Make sure backend is running
 
@@ -62,34 +62,54 @@ export default function App() {
       } else {
         throw new Error('Failed to retrieve job ID');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setPollingStatus('Error connecting to the service. Please try again.');
+      if (error.code === 'ERR_NETWORK' || !error.response) {
+        toast.error('Unable to connect to the server. Please check if the backend is running.', { duration: 5000 });
+      } else {
+        const detail = error.response?.data?.message || error.message;
+        toast.error(`Request failed: ${detail}`, { duration: 5000 });
+      }
+      setPollingStatus('');
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
+    let pollErrorCount = 0;
 
     if (jobId) {
       setPollingStatus('Computing astronomical data and synthesis...');
       intervalId = setInterval(async () => {
         try {
           const res = await axios.get(`${API_BASE_URL}/user/reading/${jobId}`);
+          pollErrorCount = 0; // Reset on successful poll
           
           if (res.data.state === 'COMPLETE') {
             setReading(res.data.reading);
             setJobId(null);
             setLoading(false);
             setPollingStatus('');
+            toast.success('Your reading is ready!', { duration: 3000 });
           } else if (res.data.state === 'FAILED') {
-            setPollingStatus('Processing failed. Please check inputs.');
+            toast.error('Currently experiencing high demand. Please try again in a few minutes.', {
+              duration: 6000,
+              icon: '🔥',
+            });
+            setPollingStatus('');
             setJobId(null);
             setLoading(false);
           }
-        } catch (error) {
+        } catch (error: any) {
+          pollErrorCount++;
           console.error('Polling error', error);
+          if (pollErrorCount >= 5) {
+            toast.error('Lost connection to the server. Please check your network and try again.', { duration: 5000 });
+            setJobId(null);
+            setLoading(false);
+            setPollingStatus('');
+          }
         }
       }, 3000); // Poll every 3 seconds
     }
@@ -99,8 +119,71 @@ export default function App() {
     };
   }, [jobId]);
 
+  const handleDownload = () => {
+    if (!reading) return;
+    const blob = new Blob([reading], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Hadahana_Reading_${formData.dateOfBirth}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const renderFormattedText = (text: string) => {
+    return text.split('\n').map((line, index) => {
+      if (line.trim() === '') return <br key={index} />;
+      
+      // Check for Markdown Headings (e.g., ### Title)
+      const headingMatch = line.match(/^(#{1,6})\s+(.*)/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        const content = headingMatch[2].replace(/\*\*/g, ''); // strip any bold asterisks from headers
+        return (
+          <Typography 
+            key={index} 
+            variant={level <= 2 ? "h5" : "h6"} 
+            sx={{ mt: 3, mb: 1, fontWeight: 700, color: '#1a1a1a' }}
+          >
+            {content}
+          </Typography>
+        );
+      }
+
+      // Check for numbered lists or list items that are heavily bolded at the start
+      if (/^[0-9]+\.|^\*/.test(line.trim()) && !line.includes('**')) {
+        return (
+          <Typography key={index} variant="body1" sx={{ mb: 1.5, lineHeight: 1.8, ml: 2 }}>
+            {line}
+          </Typography>
+        );
+      }
+
+      // Process bold text within regular paragraphs using split
+      const parts = line.split(/\*\*(.*?)\*\*/g);
+      
+      return (
+        <Typography key={index} variant="body1" sx={{ mb: 1.5, lineHeight: 1.8 }}>
+          {parts.map((part, i) => (
+            i % 2 === 1 ? <strong key={i}>{part}</strong> : <span key={i}>{part}</span>
+          ))}
+        </Typography>
+      );
+    });
+  };
+
   return (
     <Box sx={{ flexGrow: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Toaster 
+        position="top-center" 
+        toastOptions={{
+          style: { fontFamily: 'inherit', fontSize: '14px', borderRadius: '10px', padding: '12px 20px' },
+          success: { style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' } },
+          error: { style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }, duration: 5000 },
+        }}
+      />
       <AppBar position="static" elevation={0} color="transparent" sx={{ borderBottom: '1px solid #eaeaea' }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: 1 }}>
@@ -109,19 +192,20 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="md" sx={{ mt: 6, mb: 6, flexGrow: 1 }}>
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={5}>
+      <Container maxWidth="lg" sx={{ mt: 6, mb: 6, flexGrow: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4 }}>
+          {/* Form Section */}
+          <Box sx={{ width: { xs: '100%', md: '35%' } }}>
             <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
               Generate Horoscope
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.6 }}>
-              Enter the exact birth details to calculate planetary positions and generate a comprehensive reading based on the Lahiri Ayanamsha.
+              Enter the exact birth details to calculate planetary positions and generate a comprehensive reading.
             </Typography>
 
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                   <TextField
                     fullWidth
                     label="Date of Birth"
@@ -129,11 +213,9 @@ export default function App() {
                     name="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleChange}
-                    InputLabelProps={{ shrink: true }}
+                    slotProps={{ inputLabel: { shrink: true } }}
                     required
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Time of Birth"
@@ -141,77 +223,71 @@ export default function App() {
                     name="timeOfBirth"
                     value={formData.timeOfBirth}
                     onChange={handleChange}
-                    InputLabelProps={{ shrink: true }}
+                    slotProps={{ inputLabel: { shrink: true } }}
                     required
                   />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="Gender"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    required
-                  >
-                    <MenuItem value="male">Male</MenuItem>
-                    <MenuItem value="female">Female</MenuItem>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Latitude"
-                    type="number"
-                    inputProps={{ step: "0.0001" }}
-                    name="latitude"
-                    value={formData.latitude}
-                    onChange={handleChange}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Longitude"
-                    type="number"
-                    inputProps={{ step: "0.0001" }}
-                    name="longitude"
-                    value={formData.longitude}
-                    onChange={handleChange}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    fullWidth
-                    disabled={loading}
-                    sx={{ mt: 2, py: 1.5 }}
-                  >
-                    {loading ? 'Processing...' : 'Compute Horoscope'}
-                  </Button>
-                </Grid>
-              </Grid>
-            </form>
-          </Grid>
+                </Box>
+                <TextField
+                  select
+                  fullWidth
+                  label="Gender"
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  required
+                >
+                  <MenuItem value="male">Male</MenuItem>
+                  <MenuItem value="female">Female</MenuItem>
+                </TextField>
+                
+                <LocationPicker 
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  onChange={(lat, lng) => setFormData(prev => ({...prev, latitude: lat, longitude: lng}))}
+                />
 
-          <Grid item xs={12} md={7}>
+                <Typography 
+                  variant="caption" 
+                  color="text.secondary" 
+                  sx={{ 
+                    mt: 1, 
+                    textAlign: 'center', 
+                    fontStyle: 'italic',
+                    lineHeight: 1.5,
+                    opacity: 0.8,
+                  }}
+                >
+                  The accuracy of this reading depends on your exact birth time and the precise location you choose.
+                </Typography>
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  fullWidth
+                  disabled={loading}
+                  sx={{ mt: 1, py: 1.5 }}
+                >
+                  {loading ? 'Processing...' : 'Compute Horoscope'}
+                </Button>
+              </Box>
+            </form>
+          </Box>
+
+          {/* Reading Result Section */}
+          <Box sx={{ width: { xs: '100%', md: '65%' } }}>
             <Paper 
               elevation={0} 
               sx={{ 
                 height: '100%', 
-                minHeight: 400, 
                 border: '1px solid #eaeaea', 
                 borderRadius: 3,
                 p: 4,
                 display: 'flex',
                 flexDirection: 'column',
-                backgroundColor: '#fafafa'
+                backgroundColor: '#fafafa',
+                maxHeight: '85vh',
               }}
             >
               {!loading && !reading && (
@@ -229,39 +305,45 @@ export default function App() {
                     {pollingStatus}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    Please wait. This may take up to 30 seconds.
+                    Please wait. This may take up to 90 seconds depending on API limits.
                   </Typography>
                 </Box>
               )}
 
               {reading && (
-                <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
-                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, borderBottom: '2px solid #1a1a1a', pb: 1, display: 'inline-block' }}>
-                    Astrological Reading
-                  </Typography>
-                  <Box sx={{ mt: 2 }}>
-                    {reading.split('\\n').map((paragraph, index) => {
-                      if (paragraph.trim() === '') return <br key={index} />;
-                      // Make headers bold if they start with numbers or asterisks
-                      if (/^[0-9]+\.|^\*\*/.test(paragraph.trim())) {
-                         return (
-                           <Typography key={index} variant="h6" sx={{ mt: 3, mb: 1, fontWeight: 600, fontSize: '1.1rem' }}>
-                             {paragraph.replace(/\\*/g, '')}
-                           </Typography>
-                         )
-                      }
-                      return (
-                        <Typography key={index} variant="body1" sx={{ mb: 1.5, lineHeight: 1.8 }}>
-                          {paragraph.replace(/\\*/g, '')}
-                        </Typography>
-                      );
-                    })}
+                <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, borderBottom: '2px solid #1a1a1a', pb: 1 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                      Astrological Reading
+                    </Typography>
+                    <Button 
+                      variant="outlined" 
+                      color="primary" 
+                      size="small" 
+                      onClick={handleDownload}
+                      sx={{ textTransform: 'none', fontWeight: 600 }}
+                    >
+                      Download as .txt
+                    </Button>
+                  </Box>
+                  <Box 
+                    sx={{ 
+                      flexGrow: 1, 
+                      overflowY: 'auto', 
+                      pr: 2,
+                      '&::-webkit-scrollbar': { width: '8px' },
+                      '&::-webkit-scrollbar-track': { background: '#f1f1f1', borderRadius: '4px' },
+                      '&::-webkit-scrollbar-thumb': { background: '#ccc', borderRadius: '4px' },
+                      '&::-webkit-scrollbar-thumb:hover': { background: '#999' }
+                    }}
+                  >
+                    {renderFormattedText(reading)}
                   </Box>
                 </Box>
               )}
             </Paper>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

@@ -25,7 +25,7 @@ export class GeminiService {
 
   async generateAstrologyReading(prompt: string): Promise<string> {
     try {
-      const modelName = this.configService.get<string>('gen_ai_model');
+      const modelName = this.configService.get<string>('gen_ai_model') || 'gemini-flash-latest';
       const model = this.genAI.getGenerativeModel({
         model: modelName,
       });

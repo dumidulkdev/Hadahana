@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  python-engine:
+    build:
+      context: ./python-engine
+    container_name: hadahana-engine
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+    container_name: hadahana-backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Override the engine URL from .env to use Docker's internal networking
+      - ENGINE_BASE_URL=http://python-engine:8000
+    depends_on:
+      - python-engine
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: hadahana-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
