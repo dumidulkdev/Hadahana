@@ -13,7 +13,10 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import LocationPicker from './LocationPicker';
 
-const API_BASE_URL = 'http://localhost:3000';
+let API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+if (API_BASE_URL && !API_BASE_URL.startsWith('http')) {
+  API_BASE_URL = `https://${API_BASE_URL}`;
+}
 
 export default function Home() {
   const [formData, setFormData] = useState({

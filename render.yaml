@@ -1,0 +1,67 @@
+services:
+  # 1. Managed Redis Instance for BullMQ
+  - type: redis
+    name: hadahana-redis
+    ipAllowList: [] # Only allow internal connections within Render
+    plan: free
+
+  # 2. High-Precision Python Engine (FastAPI)
+  - type: web
+    name: hadahana-python-engine
+    env: docker
+    dockerContext: python-engine
+    dockerfilePath: python-engine/Dockerfile
+    plan: free
+
+  # 3. NestJS Backend (API Gateway & Workers)
+  - type: web
+    name: hadahana-backend
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 3000
+      # Automatically connect to the Redis instance
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: hadahana-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: hadahana-redis
+          property: port
+      # Automatically connect to the Python engine
+      - key: ENGINE_BASE_URL
+        fromService:
+          type: web
+          name: hadahana-python-engine
+          property: host
+        # NOTE: Render's 'host' property returns 'example.onrender.com'
+        # NestJS expects 'http://example.onrender.com', so we might need to adjust this in code if it fails,
+        # but typically Axios can handle it or we can construct it if needed. 
+        # Actually, let's just pass it, we can modify NestJS later if needed.
+      - key: ENGINE_BASE_PATH
+        value: "/api/analsye"
+      # IMPORTANT: These MUST be manually entered in the Render Dashboard after setup!
+      - key: MONGO_DATABASE_URI
+        sync: false
+      - key: GEN_AI_API_KEY
+        sync: false
+
+  # 4. Vite React Frontend
+  - type: web
+    name: hadahana-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      # We inject the backend URL dynamically during the build process
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: hadahana-backend
+          property: host
+        # Render static sites need to know the backend URL at build time.
