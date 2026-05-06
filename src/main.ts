@@ -17,6 +17,6 @@ async function bootstrap() {
   const config = new DocumentBuilder().setTitle('Hadahana API').build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
-  await app.listen(configService.get('port')!);
+  await app.listen(configService.get('port')!, '0.0.0.0');
 }
 bootstrap();
