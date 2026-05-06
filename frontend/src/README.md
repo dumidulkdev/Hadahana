@@ -9,6 +9,10 @@
 [![Swiss Ephemeris](https://img.shields.io/badge/Swiss_Ephemeris-pyswisseph-8B5A2B?style=for-the-badge)](https://pypi.org/project/pyswisseph/)
 [![License](https://img.shields.io/badge/License-UNLICENSED-red?style=for-the-badge)](LICENSE)
 
+**Live Preview:** [https://hadahana.codebydumi.space/](https://hadahana.codebydumi.space/)
+
+![Hadahana Platform Preview](./assets/screenshot.png)
+
 `Hadahana` (the reading of fate) is an enterprise-grade Vedic astrology platform built for precision and scale. It computes a complete sidereal birth chart using the Swiss Ephemeris (`pyswisseph`) via the Lahiri Ayanamsha, and synthesizes a richly contextualised natural-language horoscope reading in Sinhala.
 
 # Contents
