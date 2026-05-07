@@ -60,8 +60,5 @@ services:
     envVars:
       # We inject the backend URL dynamically during the build process
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: hadahana-backend
-          property: host
+        sync: false
         # Render static sites need to know the backend URL at build time.
