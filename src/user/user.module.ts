@@ -8,7 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Horoscope, HoroscopeSchema } from './schemas/horoscopet.schema';
 import { BullModule } from '@nestjs/bullmq';
 import { AiAnalyserConsumer } from './consumers/ai-analyse.consumer';
-import { GeminiService } from './gemini.service';
+import { DeepseekService } from './deepseek.service';
 
 @Module({
   imports: [
@@ -34,7 +34,7 @@ import { GeminiService } from './gemini.service';
     UserService,
     CalculateEngineService,
     AiAnalyserConsumer,
-    GeminiService,
+    DeepseekService,
   ],
   exports: [UserService],
 })

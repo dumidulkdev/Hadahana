@@ -8,6 +8,6 @@ export default () => ({
     ? `http://${process.env.ENGINE_BASE_URL}` 
     : process.env.ENGINE_BASE_URL,
   engine_base_path: process.env.ENGINE_BASE_PATH,
-  gen_ai_api_key: process.env.GEN_AI_API_KEY,
-  gen_ai_model: process.env.GEN_AI_MODEL || 'gemini-1.5-flash',
+  deepseek_api_key: process.env.DEEPSEEK_API_KEY,
+  deepseek_model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
 });

@@ -48,7 +48,7 @@ services:
       # IMPORTANT: These MUST be manually entered in the Render Dashboard after setup!
       - key: MONGO_DATABASE_URI
         sync: false
-      - key: GEN_AI_API_KEY
+      - key: DEEPSEEK_API_KEY
         sync: false
 
   # 4. Vite React Frontend
